@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.github.tteofili.looseen.dl4j.MinHashParagraphVectorsClassifier;
+import com.github.tteofili.looseen.dl4j.NeuralNetworkSimilarity;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -179,6 +180,7 @@ public final class Test20NewsgroupsClassification extends LuceneTestCase {
             final long startTime = System.currentTimeMillis();
 
 
+            classifiers.add(new KNearestNeighborClassifier(reader, new NeuralNetworkSimilarity(), analyzer, null, 1, 0, 0, CATEGORY_FIELD, BODY_FIELD));
             classifiers.add(new KNearestNeighborClassifier(reader, new ClassicSimilarity(), analyzer, null, 1, 0, 0, CATEGORY_FIELD, BODY_FIELD));
             classifiers.add(new KNearestNeighborClassifier(reader, null, analyzer, null, 1, 0, 0, CATEGORY_FIELD, BODY_FIELD));
             classifiers.add(new KNearestNeighborClassifier(reader, new ClassicSimilarity(), analyzer, null, 3, 0, 0, CATEGORY_FIELD, BODY_FIELD));
@@ -194,7 +196,7 @@ public final class Test20NewsgroupsClassification extends LuceneTestCase {
             classifiers.add(new MinHashClassifier(reader, BODY_FIELD, CATEGORY_FIELD, 15, 1, 100));
             classifiers.add(new MinHashClassifier(reader, BODY_FIELD, CATEGORY_FIELD, 30, 3, 300));
             classifiers.add(new MinHashClassifier(reader, BODY_FIELD, CATEGORY_FIELD, 10, 1, 100));
-            classifiers.add(new MinHashParagraphVectorsClassifier(reader, BODY_FIELD, CATEGORY_FIELD, 10, 1, 100));
+//            classifiers.add(new MinHashParagraphVectorsClassifier(reader, BODY_FIELD, CATEGORY_FIELD, 10, 1, 100));
             classifiers.add(new KNearestFuzzyClassifier(reader, new LMJelinekMercerSimilarity(0.3f), analyzer, null, 1, CATEGORY_FIELD, BODY_FIELD));
             classifiers.add(new KNearestFuzzyClassifier(reader, new IBSimilarity(new DistributionLL(), new LambdaTTF(), new NormalizationH1()), analyzer, null, 1, CATEGORY_FIELD, BODY_FIELD));
             classifiers.add(new KNearestFuzzyClassifier(reader, new ClassicSimilarity(), analyzer, null, 1, CATEGORY_FIELD, BODY_FIELD));
