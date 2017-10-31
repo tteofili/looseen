@@ -1,5 +1,6 @@
 package com.github.tteofili.looseen.dl4j;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.similarities.BasicStats;
 import org.apache.lucene.search.similarities.SimilarityBase;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -12,6 +13,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -31,9 +33,9 @@ public class NeuralNetworkSimilarity extends SimilarityBase {
     WeightInit weightInit = WeightInit.XAVIER;
     Updater updater = Updater.RMSPROP;
     int lstmLayerSize = 30;
-    Activation activation = Activation.RELU;
-    int noOfHiddenLayers = 2;
-    int tbpttLength = 25;
+    Activation activation = Activation.SOFTPLUS;
+    int noOfHiddenLayers = 1;
+    int tbpttLength = 15;
 
     NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
@@ -47,14 +49,14 @@ public class NeuralNetworkSimilarity extends SimilarityBase {
         .layer(0, new LSTM.Builder().nIn(8).nOut(lstmLayerSize)
             .activation(activation).build());
 
-    for (int i = 1; i < noOfHiddenLayers; i++) {
-      builder = builder.layer(i, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+    for (int i = 0; i < noOfHiddenLayers; i++) {
+      builder = builder.layer(i+1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
           .activation(activation).build());
     }
     builder.layer(noOfHiddenLayers, new RnnOutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).activation(activation)
         .nIn(lstmLayerSize).nOut(1).build())
         .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(tbpttLength).tBPTTBackwardLength(tbpttLength)
-        .pretrain(false).backprop(true)
+        .pretrain(true).backprop(true)
         .build();
 
     MultiLayerNetwork net = new MultiLayerNetwork(builder.build());
@@ -76,7 +78,11 @@ public class NeuralNetworkSimilarity extends SimilarityBase {
     doubles[6] = freq;
     doubles[7] = docLen;
 
-    return network.feedForward(Nd4j.create(new FloatBuffer(doubles), new int[] {1, inputSize}), true).get(network.getnLayers() - 1).maxNumber().floatValue();
+    INDArray input = Nd4j.create(new FloatBuffer(doubles), new int[] {1, inputSize});
+    input.divi(input.ameanNumber());
+
+    float v = network.feedForward(input, true).get(network.getnLayers()).maxNumber().floatValue();
+    return Float.isFinite(v) ? v : 0;
   }
 
   @Override
